@@ -1,15 +1,22 @@
 ///<reference path="./ha/comp/BaseComponent.ts"/>
+
 class NoteItem extends ha.comp.BaseComponent {
-    private item: INote;
+    private _item: INote;
+    public get item(): INote {
+        return this._item;
+    }
+
     private tglEl: HTMLElement;
     private judulEl: HTMLElement;
     private hapusTbl: HTMLButtonElement;
     private static daftar: NoteItem[] = [];
+    private timer: number;
+    private downTime: number;
 
     constructor(item: INote) {
         super();
         this._template = `
-            <div class='note-item padding'>
+            <div class='note-item padding user-select-none'>
                 <div class='tgl text-align-right'></div>
                 <div class='disp-flex'>
                     <div class='judul flex-grow-1 disp-flex align-items-center'></div>
@@ -24,17 +31,39 @@ class NoteItem extends ha.comp.BaseComponent {
         this.judulEl = this.getEl('div.judul');
         this.hapusTbl = this.getEl('button.hapus') as HTMLButtonElement;
 
-        this.item = item;
+        this.tglEl.style.fontSize = 'smaller';
+
+        this._item = item;
         this.refresh();
 
-        this._elHtml.onclick = () => {
-            HalDepan.inst.detach();
+        this._elHtml.onpointerdown = (e: PointerEvent) => {
+            e.stopPropagation();
+            this.timer = setTimeout(() => {
+                console.log('on hold event');
+                this._elHtml.setAttribute('fase', 'idle');
+            }, 1000);
 
-            HalEdit.Inst.edit(this.item, () => {
-                this.refresh();
-                HalDepan.inst.attach(document.body);
-                Note.simpan();
-            });
+            this.downTime = Date.now();
+            console.log('down');
+            this._elHtml.setAttribute('fase', 'pencet');
+        }
+
+        this._elHtml.onpointerup = (e: PointerEvent) => {
+            e.stopPropagation();
+            clearTimeout(this.timer);
+
+            if ((Date.now() - this.downTime) > 500) {
+                console.log('click cancel');
+                this._elHtml.setAttribute('fase', 'idle');
+            }
+            else {
+                this._elHtml.setAttribute('fase', 'click');
+                this.klik();
+            }
+        }
+
+        this._elHtml.onclick = () => {
+            console.log('on click');
         }
 
         this.hapusTbl.onclick = (e: MouseEvent) => {
@@ -44,11 +73,41 @@ class NoteItem extends ha.comp.BaseComponent {
             if (ok) {
                 Note.hapus(this.item.id);
                 NoteItem.hapus(this.item);
-                this.item = null;
+                this._item = null;
                 this.destroy();
-                Note.simpan();
+                simpan();
+                HalDepan.inst.updateKosong();
             }
         }
+    }
+
+    private klik(): void {
+        HalDepan.inst.detach();
+
+        let copy: INote = Note.clone(this.item);
+
+        HalEdit.Inst.edit(copy, () => {
+            this.item.isi = copy.isi;
+            this.item.judul = copy.judul;
+            this.refresh();
+
+            HalDepan.inst.attach(document.body);
+            simpan();
+        }, () => {
+            HalDepan.inst.attach(document.body);
+        });
+    }
+
+    static checkKosong(): boolean {
+        if (this.daftar.length == 0) return true;
+
+        for (let i: number = 0; i < this.daftar.length; i++) {
+            if (this.daftar[i].elHtml.style.display != 'none') {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     refresh(): void {
@@ -56,7 +115,7 @@ class NoteItem extends ha.comp.BaseComponent {
         this.judulEl.innerText = this.item.judul;
     }
 
-    renderTanggal(n: number): string {
+    private renderTanggal(n: number): string {
         let date: Date = new Date(n);
 
         return (date.getDate() + 1) + '/' + date.getMonth() + '/' + date.getFullYear();
@@ -68,9 +127,6 @@ class NoteItem extends ha.comp.BaseComponent {
                 this.daftar.splice(idx, 1);
             }
         })
-
-        // console.log(item);
-        // throw Error('hapus tidak ketemu: ');
     }
 
     static buat(item: INote): NoteItem {
@@ -96,6 +152,14 @@ class NoteItem extends ha.comp.BaseComponent {
         this.daftar.forEach((view: NoteItem) => {
             view.elHtml.style.display = 'block';
         })
+    }
+
+    static hapusSemua(): void {
+        while (this.daftar.length > 0) {
+            let item: NoteItem = this.daftar.pop();
+            item._item = null;
+            item.destroy();
+        }
     }
 
 

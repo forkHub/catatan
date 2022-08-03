@@ -1,14 +1,38 @@
 window.onload = () => {
 	HalDepan.inst.attach(document.body);
-	TambahTbl.inst.attach(document.body);
-	Note.load();
+	load();
 }
 
-function debug(): void {
-	for (let i: number = 0; i < 100; i++) {
-		Note.buat(Date.now(), 'judul' + i, 'isi' + i);
+function simpan(): void {
+	window.localStorage.setItem('ha.note.data', JSON.stringify(Note.slice()));
+}
+
+function load(): void {
+	Note.hapusSemua();
+	NoteItem.hapusSemua();
+
+	try {
+		let str: string;
+		str = window.localStorage.getItem('ha.note.data');
+		if (str) {
+			let note: INote[] = JSON.parse(str);
+
+			note.forEach((item: INote) => {
+				Note.push(item);
+				NoteItem.buat(item).attach(HalDepan.inst.listCont);
+			});
+		}
+		else {
+			console.log('data belum ada');
+		}
 	}
-	Note.renderAll();
+	catch (e) {
+		console.error(e);
+		ha.comp.dialog.tampil('Ada kesalahan');
+	}
+
+	HalDepan.inst.updateKosong();
+
 }
 
 interface INote {

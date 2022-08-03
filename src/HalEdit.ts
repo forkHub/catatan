@@ -4,7 +4,10 @@ class HalEdit extends ha.comp.BaseComponent {
     private isiEl: HTMLTextAreaElement;
     private backTbl: HTMLElement;
     private selesai: () => void;
+    private batal: () => void;
     private note: INote;
+    private simpanTbl: HTMLButtonElement;
+    private batalTbl: HTMLButtonElement;
 
     constructor() {
         super();
@@ -17,10 +20,18 @@ class HalEdit extends ha.comp.BaseComponent {
                 <div class='padding'></div>
                 <div class='disp-flex flex-dir-col flex-grow-1'>
                     <label for='judul'>Judul:</label>
-                    <input type='text' name='judul' class='judul'/>
+                    <input type='text' name='judul' class='judul padding'/>
                     <div class='padding'></div>
                     <label for='judul'>Isi:</label>
-                    <textarea class='flex-grow-1 isi' name='isi' rows='20' cols='80'/></textarea>
+                    <textarea class='flex-grow-1 isi padding' name='isi' rows='20' cols='80'/></textarea>
+                    <div class='disp-table padding'>
+                        <div class='disp-cell text-align-center'>
+                            <button class='simpan'>simpan</button>
+                        </div>
+                        <div class='disp-cell text-align-center'>
+                            <button class='batal'>batal</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
@@ -28,6 +39,8 @@ class HalEdit extends ha.comp.BaseComponent {
         this.judulEl = this.getEl('input.judul') as HTMLInputElement;
         this.isiEl = this.getEl('textarea.isi') as HTMLTextAreaElement;
         this.backTbl = this.getEl('button.kembali') as HTMLButtonElement;
+        this.simpanTbl = this.getEl('button.simpan') as HTMLButtonElement;
+        this.batalTbl = this.getEl('button.batal') as HTMLButtonElement;
 
         this.judulEl.onchange = () => {
             this.note.judul = this.judulEl.value;
@@ -38,9 +51,22 @@ class HalEdit extends ha.comp.BaseComponent {
         }
 
         this.backTbl.onclick = () => {
+            this.klikBack();
+        }
+
+        this.batalTbl.onclick = () => {
+            this.klikBack();
+        }
+
+        this.simpanTbl.onclick = () => {
             this.detach();
             this.selesai();
         }
+    }
+
+    klikBack(): void {
+        this.detach();
+        this.batal();
     }
 
     static get Inst(): HalEdit {
@@ -55,10 +81,11 @@ class HalEdit extends ha.comp.BaseComponent {
         this.isiEl.value = this.note.isi;
     }
 
-    edit(note: INote, f: () => void): void {
+    edit(note: INote, ok: () => void, batal: () => void): void {
         this.note = note;
         this.updateView();
-        this.selesai = f;
+        this.selesai = ok;
+        this.batal = batal;
         this.attach(document.body);
     }
 }

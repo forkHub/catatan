@@ -11,7 +11,32 @@ class Note {
             isi: isi
         }
 
-        this.daftarNote.push(hasil);
+        // this.daftarNote.push(hasil);
+        return hasil;
+    }
+
+    static push(note: INote): void {
+        this.daftarNote.push(note);
+    }
+
+    static clone(note: INote): INote {
+        return {
+            id: note.id,
+            judul: note.judul,
+            isi: note.isi,
+            tgl: note.tgl
+        }
+    }
+
+    static get(id: number): INote {
+        let hasil: INote;
+
+        this.daftarNote.forEach((item: INote) => {
+            if (item.id == id) {
+                hasil = item;
+            }
+        })
+
         return hasil;
     }
 
@@ -32,48 +57,17 @@ class Note {
         return false;
     }
 
-    static renderAll(): void {
-        this.daftarNote.forEach((note: INote) => {
-            NoteItem.buat(note).attach(HalDepan.inst.listCont);
-        })
-    }
-
-    static simpan(): void {
-        window.localStorage.setItem('ha.note.data', JSON.stringify(this.daftarNote));
-    }
-
-    static load(): void {
-        let str: string;
-        this.hapusSemua();
-
-        try {
-            str = window.localStorage.getItem('ha.note.data');
-            if (str) {
-                let note: INote[] = JSON.parse(str);
-
-                note.forEach((item: INote) => {
-                    this.daftarNote.push(item);
-                });
-
-                this.renderAll();
-            }
-            else {
-                console.log('data belum ada');
-            }
-        }
-        catch (e) {
-            console.error(e);
-            ha.comp.dialog.tampil('Ada kesalahan');
-        }
+    static jml(): number {
+        return this.daftarNote.length;
     }
 
     static hapusSemua(): void {
         while (this.daftarNote.length > 0) {
-            let note: INote;
-
-            note = this.daftarNote[0];
-            NoteItem.hapus(note);
-            this.hapus(note.id);
+            this.daftarNote.pop();
         }
+    }
+
+    static slice(): INote[] {
+        return this.daftarNote.slice();
     }
 }
